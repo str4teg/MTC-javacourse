@@ -1,0 +1,13 @@
+name: Simple CI job
+
+on:
+  push:
+  pull_request:
+workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print message to console
+        run: date +"%Y-%m-%d %H:%M:%S %Z"
