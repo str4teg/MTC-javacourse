@@ -1,2 +1,2 @@
 # MTC-javacourse
-Sofronov
+Sofronov AY
