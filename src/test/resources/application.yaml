@@ -1,0 +1,12 @@
+spring:
+  profiles:
+    active: test
+  main:
+    lazy-initialization: true
+
+server:
+  port: 0
+
+app:
+  name: test-app
+  version: 0-test
