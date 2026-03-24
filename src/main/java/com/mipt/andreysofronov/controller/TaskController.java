@@ -4,11 +4,14 @@ import com.mipt.andreysofronov.dto.TaskCreateDto;
 import com.mipt.andreysofronov.dto.TaskResponseDto;
 import com.mipt.andreysofronov.dto.TaskUpdateDto;
 import com.mipt.andreysofronov.mapper.TaskMapper;
+import com.mipt.andreysofronov.validation.OnCreate;
+import com.mipt.andreysofronov.validation.OnUpdate;
 import com.mipt.andreysofronov.model.Task;
 import com.mipt.andreysofronov.service.TaskService;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -45,14 +48,16 @@ public class TaskController {
   }
 
   @PostMapping
-  public ResponseEntity<TaskResponseDto> createTask(@RequestBody TaskCreateDto dto) {
+  public ResponseEntity<TaskResponseDto> createTask(
+      @Validated(OnCreate.class) @RequestBody TaskCreateDto dto) {
     Task saved = taskService.save(taskMapper.toEntity(dto));
     return ResponseEntity.status(HttpStatus.CREATED).body(taskMapper.toResponseDto(saved));
   }
 
   @PutMapping("/{id}")
   public ResponseEntity<TaskResponseDto> updateTask(
-      @PathVariable("id") Long id, @RequestBody TaskUpdateDto dto) {
+      @PathVariable("id") Long id,
+      @Validated(OnUpdate.class) @RequestBody TaskUpdateDto dto) {
     return taskService
         .findById(id)
         .map(

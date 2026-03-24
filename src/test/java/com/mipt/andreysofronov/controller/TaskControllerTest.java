@@ -92,13 +92,13 @@ class TaskControllerTest {
   void getAllTasks_returnsOkWithBody() {
     warmUpTaskService();
     restTemplate.postForEntity(
-        "/api/tasks", jsonEntity(createDto("a")), TaskResponseDto.class);
+        "/api/tasks", jsonEntity(createDto("abc")), TaskResponseDto.class);
 
     ResponseEntity<TaskResponseDto[]> response =
         restTemplate.getForEntity("/api/tasks", TaskResponseDto[].class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(response.getBody()).extracting(TaskResponseDto::getTitle).contains("a");
+    assertThat(response.getBody()).extracting(TaskResponseDto::getTitle).contains("abc");
   }
 
   @Test
@@ -116,7 +116,7 @@ class TaskControllerTest {
     warmUpTaskService();
     TaskResponseDto created =
         restTemplate
-            .postForEntity("/api/tasks", jsonEntity(createDto("x")), TaskResponseDto.class)
+            .postForEntity("/api/tasks", jsonEntity(createDto("xxx")), TaskResponseDto.class)
             .getBody();
     assertThat(created).isNotNull();
 
@@ -125,7 +125,7 @@ class TaskControllerTest {
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).isNotNull();
-    assertThat(response.getBody().getTitle()).isEqualTo("x");
+    assertThat(response.getBody().getTitle()).isEqualTo("xxx");
   }
 
   @Test
@@ -179,7 +179,7 @@ class TaskControllerTest {
     when(taskRepository.save(any(Task.class))).thenThrow(new RuntimeException("persist failed"));
 
     ResponseEntity<String> response =
-        restTemplate.postForEntity("/api/tasks", jsonEntity(createDto("t")), String.class);
+        restTemplate.postForEntity("/api/tasks", jsonEntity(createDto("bad")), String.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
   }
@@ -194,7 +194,7 @@ class TaskControllerTest {
     assertThat(created).isNotNull();
 
     TaskUpdateDto body = new TaskUpdateDto();
-    body.setTitle("u");
+    body.setTitle("upd");
     body.setDescription("d");
     body.setCompleted(true);
 
@@ -204,13 +204,13 @@ class TaskControllerTest {
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).isNotNull();
-    assertThat(response.getBody().getTitle()).isEqualTo("u");
+    assertThat(response.getBody().getTitle()).isEqualTo("upd");
   }
 
   @Test
   void updateTask_whenInvalidIdPath_returnsClientOrServerError() {
     TaskUpdateDto body = new TaskUpdateDto();
-    body.setTitle("u");
+    body.setTitle("valid");
 
     ResponseEntity<String> response =
         restTemplate.exchange("/api/tasks/not-id", HttpMethod.PUT, jsonEntity(body), String.class);
@@ -230,7 +230,7 @@ class TaskControllerTest {
 
     when(taskRepository.save(any(Task.class))).thenThrow(new RuntimeException("update failed"));
     TaskUpdateDto body = new TaskUpdateDto();
-    body.setTitle("u");
+    body.setTitle("ups");
 
     ResponseEntity<String> response =
         restTemplate.exchange(
