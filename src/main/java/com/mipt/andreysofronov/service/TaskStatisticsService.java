@@ -1,13 +1,16 @@
-package com.mipt.andreysofronov.listmanager.service;
+package com.mipt.andreysofronov.service;
 
-import com.mipt.andreysofronov.listmanager.model.Task;
-import com.mipt.andreysofronov.listmanager.repository.TaskRepository;
+import com.mipt.andreysofronov.model.Task;
+import com.mipt.andreysofronov.repository.TaskRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+/**
+ * Сравнение основного репозитория ({@code @Primary}) и заглушки ({@code @Qualifier}) для учебной демонстрации DI.
+ */
 @Service
 public class TaskStatisticsService {
 

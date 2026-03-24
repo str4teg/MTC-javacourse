@@ -1,7 +1,7 @@
-package com.mipt.andreysofronov.listmanager.controller;
+package com.mipt.andreysofronov.controller;
 
-import com.mipt.andreysofronov.listmanager.model.Task;
-import com.mipt.andreysofronov.listmanager.service.TaskService;
+import com.mipt.andreysofronov.model.Task;
+import com.mipt.andreysofronov.service.TaskService;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,42 +16,42 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/tasks")
-public class TaskRestController {
+public class TaskController {
 
   private final TaskService taskService;
 
-  public TaskRestController(TaskService taskService) {
+  public TaskController(TaskService taskService) {
     this.taskService = taskService;
   }
 
-  @PostMapping
-  public ResponseEntity<Task> create(@RequestBody Task task) {
-    Task saved = taskService.save(task);
-    return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+  @GetMapping
+  public List<Task> getAllTasks() {
+    return taskService.findAll();
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<Task> readOne(@PathVariable Long id) {
+  public ResponseEntity<Task> getTaskById(@PathVariable("id") Long id) {
     return taskService
         .findById(id)
         .map(ResponseEntity::ok)
         .orElseGet(() -> ResponseEntity.notFound().build());
   }
 
-  @GetMapping
-  public List<Task> readAll() {
-    return taskService.findAll();
+  @PostMapping
+  public ResponseEntity<Task> createTask(@RequestBody Task task) {
+    Task saved = taskService.save(task);
+    return ResponseEntity.status(HttpStatus.CREATED).body(saved);
   }
 
   @PutMapping("/{id}")
-  public ResponseEntity<Task> update(@PathVariable Long id, @RequestBody Task task) {
+  public ResponseEntity<Task> updateTask(@PathVariable("id") Long id, @RequestBody Task task) {
     task.setId(id);
     Task saved = taskService.save(task);
     return ResponseEntity.ok(saved);
   }
 
   @DeleteMapping("/{id}")
-  public ResponseEntity<Void> delete(@PathVariable Long id) {
+  public ResponseEntity<Void> deleteTask(@PathVariable("id") Long id) {
     taskService.deleteById(id);
     return ResponseEntity.noContent().build();
   }

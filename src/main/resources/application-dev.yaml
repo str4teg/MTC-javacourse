@@ -1,0 +1,7 @@
+# Профиль разработки: подробные логи приложения и веб-слоя
+logging:
+  level:
+    root: INFO
+    com.mipt.andreysofronov: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.web.servlet.DispatcherServlet: DEBUG

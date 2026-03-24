@@ -1,4 +1,4 @@
-package com.mipt.andreysofronov.listmanager.model;
+package com.mipt.andreysofronov.model;
 
 import java.util.Objects;
 

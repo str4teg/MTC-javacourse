@@ -1,10 +1,10 @@
-package com.mipt.andreysofronov.listmanager.repository;
+package com.mipt.andreysofronov.repository;
 
-import com.mipt.andreysofronov.listmanager.model.Task;
+import com.mipt.andreysofronov.model.Task;
 import java.util.List;
 import java.util.Optional;
 
-public interface        TaskRepository {
+public interface TaskRepository {
 
   Task save(Task task);
 

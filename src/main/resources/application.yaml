@@ -1,0 +1,10 @@
+server:
+  port: 8080
+
+app:
+  name: Task List Manager
+  version: 1.0.0
+
+spring:
+  profiles:
+    active: dev

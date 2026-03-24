@@ -1,7 +1,7 @@
-package com.mipt.andreysofronov.listmanager.service;
+package com.mipt.andreysofronov.service;
 
-import com.mipt.andreysofronov.listmanager.model.Task;
-import com.mipt.andreysofronov.listmanager.repository.TaskRepository;
+import com.mipt.andreysofronov.model.Task;
+import com.mipt.andreysofronov.repository.TaskRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.io.IOException;
@@ -16,8 +16,12 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+/**
+ * Сервис задач: операции CRUD и кэш в памяти с инициализацией и очисткой по жизненному циклу бина.
+ */
 @Service
 public class TaskService {
 
@@ -26,8 +30,20 @@ public class TaskService {
   private final TaskRepository taskRepository;
   private final Map<String, Task> taskCache = new ConcurrentHashMap<>();
 
-  public TaskService(TaskRepository taskRepository) {
+  /** Пример инъекции через {@code @Value}; не участвуют в CRUD-операциях. */
+  @SuppressWarnings("unused")
+  private final String appName;
+
+  @SuppressWarnings("unused")
+  private final String appVersion;
+
+  public TaskService(
+      TaskRepository taskRepository,
+      @Value("${app.name}") String appName,
+      @Value("${app.version}") String appVersion) {
     this.taskRepository = taskRepository;
+    this.appName = appName;
+    this.appVersion = appVersion;
   }
 
   @PostConstruct

@@ -1,6 +1,6 @@
-package com.mipt.andreysofronov.listmanager.config;
+package com.mipt.andreysofronov.config;
 
-import com.mipt.andreysofronov.listmanager.repository.StubTaskRepository;
+import com.mipt.andreysofronov.repository.StubTaskRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 

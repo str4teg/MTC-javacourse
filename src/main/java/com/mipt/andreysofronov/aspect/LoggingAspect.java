@@ -1,4 +1,4 @@
-package com.mipt.andreysofronov.listmanager.service;
+package com.mipt.andreysofronov.aspect;
 
 import java.util.Arrays;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -16,8 +16,8 @@ public class LoggingAspect {
   private static final Logger log = LoggerFactory.getLogger(LoggingAspect.class);
 
   @Around(
-      "execution(* com.mipt.andreysofronov.listmanager.service..*(..)) "
-          + "&& !within(com.mipt.andreysofronov.listmanager.service.LoggingAspect)")
+      "execution(* com.mipt.andreysofronov.service..*(..)) "
+          + "&& !within(com.mipt.andreysofronov.aspect.LoggingAspect)")
   public Object logAroundService(ProceedingJoinPoint joinPoint) throws Throwable {
     String method = joinPoint.getSignature().toShortString();
     log.info("Старт: {} | аргументы={}", method, Arrays.toString(joinPoint.getArgs()));

@@ -1,0 +1,16 @@
+# Профиль production: сдержанное логирование и безопасные ответы об ошибках
+logging:
+  level:
+    root: WARN
+    com.mipt.andreysofronov: INFO
+
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
+  shutdown: graceful
+
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 20s

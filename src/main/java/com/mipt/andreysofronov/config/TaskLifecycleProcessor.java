@@ -1,7 +1,7 @@
-package com.mipt.andreysofronov.listmanager.config;
+package com.mipt.andreysofronov.config;
 
-import com.mipt.andreysofronov.listmanager.repository.TaskRepository;
-import com.mipt.andreysofronov.listmanager.service.TaskService;
+import com.mipt.andreysofronov.repository.TaskRepository;
+import com.mipt.andreysofronov.service.TaskService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;

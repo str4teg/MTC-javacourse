@@ -1,6 +1,6 @@
-package com.mipt.andreysofronov.listmanager.repository;
+package com.mipt.andreysofronov.repository;
 
-import com.mipt.andreysofronov.listmanager.model.Task;
+import com.mipt.andreysofronov.model.Task;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,9 +46,7 @@ public class StubTaskRepository implements TaskRepository {
   }
 
   @Override
-  public void deleteById(Long id) {
-    
-  }
+  public void deleteById(Long id) {}
 
   private Task copyOf(Task source) {
     if (source == null) {
