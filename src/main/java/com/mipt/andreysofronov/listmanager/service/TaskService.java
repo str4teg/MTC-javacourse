@@ -2,17 +2,76 @@ package com.mipt.andreysofronov.listmanager.service;
 
 import com.mipt.andreysofronov.listmanager.model.Task;
 import com.mipt.andreysofronov.listmanager.repository.TaskRepository;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
 public class TaskService {
 
+  private static final Logger log = LoggerFactory.getLogger(TaskService.class);
+
   private final TaskRepository taskRepository;
+  private final Map<String, Task> taskCache = new ConcurrentHashMap<>();
 
   public TaskService(TaskRepository taskRepository) {
     this.taskRepository = taskRepository;
+  }
+
+  @PostConstruct
+  public void initCache() {
+    seedRepositoryWithPredefinedTasks();
+    taskCache.clear();
+    for (Task task : taskRepository.findAll()) {
+      taskCache.put(String.valueOf(task.getId()), task);
+    }
+    log.info("Кэш задач инициализирован: {} записей", taskCache.size());
+  }
+
+  @PreDestroy
+  public void cleanupCache() {
+    int size = taskCache.size();
+    log.info("Завершение работы TaskService: в кэше {} задач", size);
+    Path statsFile =
+        Path.of(System.getProperty("java.io.tmpdir"), "task-service-cache-stats.txt");
+    try {
+      String line =
+          Instant.now() + " cacheTasks=" + size + System.lineSeparator();
+      Files.writeString(
+          statsFile,
+          line,
+          StandardCharsets.UTF_8,
+          StandardOpenOption.CREATE,
+          StandardOpenOption.APPEND);
+    } catch (IOException e) {
+      log.warn("Не удалось записать статистику кэша в {}: {}", statsFile, e.getMessage());
+    }
+  }
+
+  private void seedRepositoryWithPredefinedTasks() {
+    taskRepository.save(task("Кэш: встреча", "Обсудить спринт", false));
+    taskRepository.save(task("Кэш: код-ревью", "Проверить PR #42", false));
+    taskRepository.save(task("Кэш: документация", "Обновить README", true));
+  }
+
+  private static Task task(String title, String description, boolean completed) {
+    Task t = new Task();
+    t.setTitle(title);
+    t.setDescription(description);
+    t.setCompleted(completed);
+    return t;
   }
 
   public Task save(Task task) {
