@@ -1,7 +1,12 @@
 package com.mipt.andreysofronov.repository;
 
+import com.mipt.andreysofronov.model.Priority;
 import com.mipt.andreysofronov.model.Task;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -19,6 +24,10 @@ public class StubTaskRepository implements TaskRepository {
     task.setTitle("task");
     task.setDescription("task");
     task.setCompleted(false);
+    task.setCreatedAt(LocalDateTime.now());
+    task.setDueDate(LocalDate.now().plusDays(1));
+    task.setPriority(Priority.LOW);
+    task.setTags(new LinkedHashSet<>(Set.of("stub")));
     map.put(task.getId(), task);
 
     this.fixedTasks = map;
@@ -57,6 +66,13 @@ public class StubTaskRepository implements TaskRepository {
     copy.setTitle(source.getTitle());
     copy.setDescription(source.getDescription());
     copy.setCompleted(source.isCompleted());
+    copy.setCreatedAt(source.getCreatedAt());
+    copy.setDueDate(source.getDueDate());
+    copy.setPriority(source.getPriority());
+    copy.setTags(
+        source.getTags() == null
+            ? new LinkedHashSet<>()
+            : new LinkedHashSet<>(source.getTags()));
     return copy;
   }
 }

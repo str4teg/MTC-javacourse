@@ -1,5 +1,9 @@
 package com.mipt.andreysofronov.controller;
 
+import com.mipt.andreysofronov.dto.TaskCreateDto;
+import com.mipt.andreysofronov.dto.TaskResponseDto;
+import com.mipt.andreysofronov.dto.TaskUpdateDto;
+import com.mipt.andreysofronov.mapper.TaskMapper;
 import com.mipt.andreysofronov.model.Task;
 import com.mipt.andreysofronov.service.TaskService;
 import java.util.List;
@@ -19,35 +23,45 @@ import org.springframework.web.bind.annotation.RestController;
 public class TaskController {
 
   private final TaskService taskService;
+  private final TaskMapper taskMapper;
 
-  public TaskController(TaskService taskService) {
+  public TaskController(TaskService taskService, TaskMapper taskMapper) {
     this.taskService = taskService;
+    this.taskMapper = taskMapper;
   }
 
   @GetMapping
-  public List<Task> getAllTasks() {
-    return taskService.findAll();
+  public List<TaskResponseDto> getAllTasks() {
+    return taskService.findAll().stream().map(taskMapper::toResponseDto).toList();
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<Task> getTaskById(@PathVariable("id") Long id) {
+  public ResponseEntity<TaskResponseDto> getTaskById(@PathVariable("id") Long id) {
     return taskService
         .findById(id)
+        .map(taskMapper::toResponseDto)
         .map(ResponseEntity::ok)
         .orElseGet(() -> ResponseEntity.notFound().build());
   }
 
   @PostMapping
-  public ResponseEntity<Task> createTask(@RequestBody Task task) {
-    Task saved = taskService.save(task);
-    return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+  public ResponseEntity<TaskResponseDto> createTask(@RequestBody TaskCreateDto dto) {
+    Task saved = taskService.save(taskMapper.toEntity(dto));
+    return ResponseEntity.status(HttpStatus.CREATED).body(taskMapper.toResponseDto(saved));
   }
 
   @PutMapping("/{id}")
-  public ResponseEntity<Task> updateTask(@PathVariable("id") Long id, @RequestBody Task task) {
-    task.setId(id);
-    Task saved = taskService.save(task);
-    return ResponseEntity.ok(saved);
+  public ResponseEntity<TaskResponseDto> updateTask(
+      @PathVariable("id") Long id, @RequestBody TaskUpdateDto dto) {
+    return taskService
+        .findById(id)
+        .map(
+            task -> {
+              taskMapper.updateEntity(dto, task);
+              return taskMapper.toResponseDto(taskService.save(task));
+            })
+        .map(ResponseEntity::ok)
+        .orElseGet(() -> ResponseEntity.notFound().build());
   }
 
   @DeleteMapping("/{id}")

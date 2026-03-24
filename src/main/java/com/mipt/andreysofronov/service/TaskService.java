@@ -9,9 +9,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import com.mipt.andreysofronov.model.Priority;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
@@ -19,9 +24,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-/**
- * Сервис задач: операции CRUD и кэш в памяти с инициализацией и очисткой по жизненному циклу бина.
- */
 @Service
 public class TaskService {
 
@@ -30,7 +32,6 @@ public class TaskService {
   private final TaskRepository taskRepository;
   private final Map<String, Task> taskCache = new ConcurrentHashMap<>();
 
-  /** Пример инъекции через {@code @Value}; не участвуют в CRUD-операциях. */
   @SuppressWarnings("unused")
   private final String appName;
 
@@ -87,6 +88,10 @@ public class TaskService {
     t.setTitle(title);
     t.setDescription(description);
     t.setCompleted(completed);
+    t.setCreatedAt(LocalDateTime.now());
+    t.setDueDate(LocalDate.now().plusDays(7));
+    t.setPriority(Priority.MEDIUM);
+    t.setTags(new LinkedHashSet<>(Set.of("seed")));
     return t;
   }
 

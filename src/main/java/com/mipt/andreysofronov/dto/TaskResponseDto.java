@@ -1,12 +1,12 @@
-package com.mipt.andreysofronov.model;
+package com.mipt.andreysofronov.dto;
 
+import com.mipt.andreysofronov.model.Priority;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
-import java.util.Objects;
 import java.util.Set;
 
-public class Task {
+public class TaskResponseDto {
 
   private Long id;
   private String title;
@@ -79,43 +79,5 @@ public class Task {
 
   public void setTags(Set<String> tags) {
     this.tags = tags == null ? new LinkedHashSet<>() : new LinkedHashSet<>(tags);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    Task task = (Task) o;
-    return completed == task.completed
-        && Objects.equals(id, task.id)
-        && Objects.equals(title, task.title)
-        && Objects.equals(description, task.description)
-        && Objects.equals(createdAt, task.createdAt)
-        && Objects.equals(dueDate, task.dueDate)
-        && priority == task.priority
-        && Objects.equals(tags, task.tags);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id, title, description, completed, createdAt, dueDate, priority, tags);
-  }
-
-  @Override
-  public String toString() {
-    return "Task{"
-        + "id=" + id
-        + ", title='" + title + '\''
-        + ", description='" + description + '\''
-        + ", completed=" + completed
-        + ", createdAt=" + createdAt
-        + ", dueDate=" + dueDate
-        + ", priority=" + priority
-        + ", tags=" + tags
-        + '}';
   }
 }
