@@ -37,7 +37,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(
-    properties = {"spring.profiles.active=test", "app.name=test-app", "app.version=0-test"})
+    properties = {
+      "spring.profiles.active=test",
+      "app.name=test-app",
+      "app.version=0-test",
+      "app.api.version=2.0.0"
+    })
 class TaskControllerTest {
 
   @Autowired private TestRestTemplate restTemplate;
@@ -132,8 +137,7 @@ class TaskControllerTest {
   void getTaskById_whenMissing_returnsNotFound() {
     warmUpTaskService();
 
-    ResponseEntity<TaskResponseDto> response =
-        restTemplate.getForEntity("/api/tasks/99", TaskResponseDto.class);
+    ResponseEntity<String> response = restTemplate.getForEntity("/api/tasks/99", String.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
   }

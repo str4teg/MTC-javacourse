@@ -1,14 +1,13 @@
 package com.mipt.andreysofronov.service;
 
+import com.mipt.andreysofronov.exception.TaskNotFoundException;
 import com.mipt.andreysofronov.model.Task;
 import com.mipt.andreysofronov.repository.TaskRepository;
 import jakarta.servlet.http.HttpSession;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class FavoritesService {
@@ -23,10 +22,7 @@ public class FavoritesService {
   }
 
   public void addFavorite(HttpSession session, Long taskId) {
-    taskRepository
-        .findById(taskId)
-        .orElseThrow(
-            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "task not found"));
+    taskRepository.findById(taskId).orElseThrow(() -> new TaskNotFoundException(taskId));
     LinkedHashSet<Long> ids = getOrCreateFavoriteIds(session);
     ids.add(taskId);
   }

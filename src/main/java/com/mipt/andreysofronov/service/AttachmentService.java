@@ -1,6 +1,7 @@
 package com.mipt.andreysofronov.service;
 
 import com.mipt.andreysofronov.dto.AttachmentResponseDto;
+import com.mipt.andreysofronov.exception.TaskNotFoundException;
 import com.mipt.andreysofronov.model.TaskAttachment;
 import com.mipt.andreysofronov.repository.TaskAttachmentRepository;
 import com.mipt.andreysofronov.repository.TaskRepository;
@@ -53,11 +54,7 @@ public class AttachmentService {
     if (file == null || file.isEmpty()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "file is required");
     }
-    taskRepository
-        .findById(taskId)
-        .orElseThrow(
-            () ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "task not found"));
+    taskRepository.findById(taskId).orElseThrow(() -> new TaskNotFoundException(taskId));
 
     String originalName = safeOriginalFileName(file.getOriginalFilename());
     String storedName = buildStoredFileName(originalName);
@@ -132,11 +129,7 @@ public class AttachmentService {
   }
 
   public List<AttachmentResponseDto> listAttachmentsForTask(Long taskId) {
-    taskRepository
-        .findById(taskId)
-        .orElseThrow(
-            () ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "task not found"));
+    taskRepository.findById(taskId).orElseThrow(() -> new TaskNotFoundException(taskId));
     return attachmentRepository.findByTaskId(taskId).stream()
         .map(AttachmentResponseDto::from)
         .toList();

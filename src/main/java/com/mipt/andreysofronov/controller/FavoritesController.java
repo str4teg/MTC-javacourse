@@ -27,10 +27,12 @@ public class FavoritesController {
   }
 
   @GetMapping
-  public List<TaskResponseDto> getFavoriteTasks(HttpSession session) {
-    return favoritesService.getFavoriteTasks(session).stream()
-        .map(taskMapper::toResponseDto)
-        .toList();
+  public ResponseEntity<List<TaskResponseDto>> getFavoriteTasks(HttpSession session) {
+    List<TaskResponseDto> body =
+        favoritesService.getFavoriteTasks(session).stream()
+            .map(taskMapper::toResponseDto)
+            .toList();
+    return ResponseEntity.ok(body);
   }
 
   @PostMapping("/{taskId}")

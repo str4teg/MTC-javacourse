@@ -4,12 +4,16 @@ server:
 app:
   name: Task List Manager
   version: 1.0.0
+  api:
+    version: "2.0.0"
   uploads:
     directory: uploads
 
 spring:
   profiles:
     active: dev
+  mvc:
+    throw-exception-if-no-handler-found: true
   servlet:
     multipart:
       max-file-size: 10MB

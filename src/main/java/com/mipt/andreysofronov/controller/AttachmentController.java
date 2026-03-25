@@ -39,8 +39,10 @@ public class AttachmentController {
   }
 
   @GetMapping("/api/tasks/{taskId}/attachments")
-  public List<AttachmentResponseDto> listAttachments(@PathVariable("taskId") Long taskId) {
-    return attachmentService.listAttachmentsForTask(taskId);
+  public ResponseEntity<List<AttachmentResponseDto>> listAttachments(
+      @PathVariable("taskId") Long taskId) {
+    List<AttachmentResponseDto> body = attachmentService.listAttachmentsForTask(taskId);
+    return ResponseEntity.ok(body);
   }
 
   @GetMapping("/api/attachments/{attachmentId}")
