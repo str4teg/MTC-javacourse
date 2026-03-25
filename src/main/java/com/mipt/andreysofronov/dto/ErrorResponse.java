@@ -1,16 +1,29 @@
 package com.mipt.andreysofronov.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+@Schema(description = "Стандартное тело ошибки API")
 public class ErrorResponse {
 
+  @Schema(description = "Время возникновения ошибки (UTC)")
   private Instant timestamp;
+
+  @Schema(description = "HTTP-код", example = "400")
   private int status;
+
+  @Schema(description = "Краткое описание статуса", example = "Bad Request")
   private String error;
+
+  @Schema(description = "Сообщение для клиента")
   private String message;
+
+  @Schema(description = "Путь запроса")
   private String path;
+
+  @Schema(description = "Дополнительные сведения (например, ошибки валидации по полям)")
   private Map<String, Object> details = new LinkedHashMap<>();
 
   public Instant getTimestamp() {

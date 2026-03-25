@@ -1,5 +1,6 @@
 package com.mipt.andreysofronov.service;
 
+import com.mipt.andreysofronov.dto.AttachmentDownload;
 import com.mipt.andreysofronov.dto.AttachmentResponseDto;
 import com.mipt.andreysofronov.exception.TaskNotFoundException;
 import com.mipt.andreysofronov.model.TaskAttachment;
@@ -14,7 +15,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
@@ -90,18 +90,16 @@ public class AttachmentService {
     return AttachmentResponseDto.from(saved);
   }
 
-  public Optional<TaskAttachment> getAttachment(Long attachmentId) {
-    return attachmentRepository.findById(attachmentId);
-  }
-
-  public Resource loadAsResource(Long attachmentId) {
+  public AttachmentDownload prepareDownload(Long attachmentId) {
     TaskAttachment attachment =
         attachmentRepository
             .findById(attachmentId)
             .orElseThrow(
                 () ->
                     new ResponseStatusException(HttpStatus.NOT_FOUND, "attachment not found"));
-    return loadAsResource(attachment);
+    Resource resource = loadAsResource(attachment);
+    return new AttachmentDownload(
+        resource, attachment.getFileName(), attachment.getSize(), attachment.getContentType());
   }
 
   public Resource loadAsResource(TaskAttachment attachment) {

@@ -1,10 +1,19 @@
 package com.mipt.andreysofronov.controller;
 
+import com.mipt.andreysofronov.dto.ErrorResponse;
 import com.mipt.andreysofronov.dto.ViewPreferenceDto;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import java.time.Duration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
@@ -17,6 +26,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/preferences")
+@Tag(name = "Preferences", description = "Настройки отображения (cookie viewPreference)")
 public class PreferencesController {
 
   static final String VIEW_PREFERENCE_COOKIE = "viewPreference";
@@ -25,9 +35,21 @@ public class PreferencesController {
   private static final String DEFAULT_MODE = MODE_DETAILED;
 
   @GetMapping("/view")
+  @Operation(summary = "Текущий режим просмотра (читает cookie; при отсутствии выставляет по умолчанию)")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Текущий режим",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = ViewPreferenceDto.class)))
+  })
   public ResponseEntity<ViewPreferenceDto> getViewPreference(
-      @CookieValue(value = VIEW_PREFERENCE_COOKIE, required = false) String modeFromCookie,
-      HttpServletResponse response) {
+      @Parameter(description = "Значение cookie viewPreference", hidden = false)
+          @CookieValue(value = VIEW_PREFERENCE_COOKIE, required = false)
+          String modeFromCookie,
+      @Parameter(hidden = true) HttpServletResponse response) {
     String effective = resolveMode(modeFromCookie);
     if (modeFromCookie == null || !isValidMode(modeFromCookie)) {
       response.addHeader(HttpHeaders.SET_COOKIE, buildViewCookie(effective).toString());
@@ -36,8 +58,28 @@ public class PreferencesController {
   }
 
   @PostMapping("/view")
+  @Operation(summary = "Установить режим просмотра (обновляет cookie)")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Режим сохранён",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = ViewPreferenceDto.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Недопустимое значение mode",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
   public ResponseEntity<ViewPreferenceDto> setViewPreference(
-      @RequestParam("mode") String mode, HttpServletResponse response) {
+      @Parameter(
+              description = "Режим: compact или detailed",
+              required = true,
+              example = "detailed")
+          @RequestParam("mode")
+          String mode,
+      @Parameter(hidden = true) HttpServletResponse response) {
     if (!isValidMode(mode)) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "mode must be " + MODE_COMPACT + " or " + MODE_DETAILED);

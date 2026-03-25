@@ -18,3 +18,20 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    try-it-out-enabled: true
+    display-request-duration: true
+  packages-to-scan: com.mipt.andreysofronov
+  show-actuator: false
+
+openapi:
+  title: "To-Do List API"
+  description: "REST API для управления задачами, вложениями, избранным и пользовательскими настройками."
+  contact:
+    name: "API Support"
+    email: "api-support@example.com"

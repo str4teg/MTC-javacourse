@@ -1,20 +1,37 @@
 package com.mipt.andreysofronov.dto;
 
 import com.mipt.andreysofronov.model.Priority;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+@Schema(description = "Задача в ответе API")
 public class TaskResponseDto {
 
+  @Schema(description = "Идентификатор", example = "1")
   private Long id;
+
+  @Schema(description = "Заголовок")
   private String title;
+
+  @Schema(description = "Описание")
   private String description;
+
+  @Schema(description = "Выполнена")
   private boolean completed;
+
+  @Schema(description = "Дата и время создания")
   private LocalDateTime createdAt;
+
+  @Schema(description = "Срок выполнения")
   private LocalDate dueDate;
+
+  @Schema(description = "Приоритет")
   private Priority priority;
+
+  @Schema(description = "Теги")
   private Set<String> tags = new LinkedHashSet<>();
 
   public Long getId() {

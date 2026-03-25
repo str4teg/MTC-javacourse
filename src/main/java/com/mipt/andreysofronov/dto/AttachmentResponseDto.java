@@ -1,13 +1,22 @@
 package com.mipt.andreysofronov.dto;
 
 import com.mipt.andreysofronov.model.TaskAttachment;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 
+@Schema(description = "Метаданные вложения после загрузки")
 public class AttachmentResponseDto {
 
+  @Schema(description = "Идентификатор вложения")
   private Long id;
+
+  @Schema(description = "Исходное имя файла")
   private String fileName;
+
+  @Schema(description = "Размер в байтах")
   private long size;
+
+  @Schema(description = "Время загрузки")
   private LocalDateTime uploadedAt;
 
   public static AttachmentResponseDto from(TaskAttachment attachment) {

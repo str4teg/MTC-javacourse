@@ -18,3 +18,10 @@ app:
     version: "2.0.0"
   uploads:
     directory: target/test-uploads
+
+openapi:
+  title: "To-Do List API"
+  description: "Test"
+  contact:
+    name: "API Support"
+    email: "api-support@example.com"

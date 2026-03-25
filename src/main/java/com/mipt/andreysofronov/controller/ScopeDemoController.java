@@ -1,39 +1,74 @@
 package com.mipt.andreysofronov.controller;
 
+import com.mipt.andreysofronov.dto.ScopePrototypeInfoDto;
+import com.mipt.andreysofronov.dto.ScopeRequestInfoDto;
 import com.mipt.andreysofronov.scope.PrototypeScopedBean;
 import com.mipt.andreysofronov.scope.RequestScopedBean;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/scope")
+@Tag(name = "Scope demo", description = "Демонстрация scope бинов Spring")
 public class ScopeDemoController {
 
+  private final ObjectProvider<PrototypeScopedBean> prototypeScopedBeanProvider;
+
+  public ScopeDemoController(ObjectProvider<PrototypeScopedBean> prototypeScopedBeanProvider) {
+    this.prototypeScopedBeanProvider = prototypeScopedBeanProvider;
+  }
+
   @GetMapping("/request")
-  public Map<String, String> requestScope(RequestScopedBean requestScopedBean) {
-    Map<String, String> body = new LinkedHashMap<>();
-    body.put("requestId", requestScopedBean.getRequestId());
-    body.put("processingStartedAt", requestScopedBean.getProcessingStartedAt().toString());
-    body.put(
-        "note",
-        "Повторите запрос — requestId изменится (новый HTTP-запрос = новый бин).");
-    return body;
+  @Operation(summary = "Демонстрация request scope")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Информация о request-scoped бине",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = ScopeRequestInfoDto.class)))
+  })
+  public ResponseEntity<ScopeRequestInfoDto> requestScope(RequestScopedBean requestScopedBean) {
+    ScopeRequestInfoDto body =
+        new ScopeRequestInfoDto(
+            requestScopedBean.getRequestId(),
+            requestScopedBean.getProcessingStartedAt(),
+            "Повторите запрос — requestId изменится (новый HTTP-запрос = новый бин).");
+    return ResponseEntity.ok(body);
   }
 
   @GetMapping("/prototype")
-  public Map<String, Object> prototypeScope(ObjectProvider<PrototypeScopedBean> prototypeProvider) {
-    PrototypeScopedBean first = prototypeProvider.getObject();
-    PrototypeScopedBean second = prototypeProvider.getObject();
-    Map<String, Object> body = new LinkedHashMap<>();
-    body.put("firstGeneratorInstanceId", first.getGeneratorInstanceId());
-    body.put("secondGeneratorInstanceId", second.getGeneratorInstanceId());
-    body.put("sameBeanInstance", first == second);
-    body.put("taskIdFromFirst", first.generateTaskId());
-    body.put("taskIdFromSecond", second.generateTaskId());
-    return body;
+  @Operation(summary = "Демонстрация prototype scope")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Два экземпляра prototype-бина за один запрос",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = ScopePrototypeInfoDto.class)))
+  })
+  public ResponseEntity<ScopePrototypeInfoDto> prototypeScope() {
+    PrototypeScopedBean first = prototypeScopedBeanProvider.getObject();
+    PrototypeScopedBean second = prototypeScopedBeanProvider.getObject();
+    ScopePrototypeInfoDto body =
+        new ScopePrototypeInfoDto(
+            first.getGeneratorInstanceId(),
+            second.getGeneratorInstanceId(),
+            first == second,
+            first.generateTaskId(),
+            second.generateTaskId());
+    return ResponseEntity.ok(body);
   }
 }
