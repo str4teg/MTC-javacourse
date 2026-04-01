@@ -1,20 +1,37 @@
-package com.mipt.andreysofronov.model;
+package com.mipt.andreysofronov.dto;
 
+import com.mipt.andreysofronov.model.Priority;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
-import java.util.Objects;
 import java.util.Set;
 
-public class Task {
+@Schema(description = "Задача в ответе API")
+public class TaskResponseDto {
 
+  @Schema(description = "Идентификатор", example = "1")
   private Long id;
+
+  @Schema(description = "Заголовок")
   private String title;
+
+  @Schema(description = "Описание")
   private String description;
+
+  @Schema(description = "Выполнена")
   private boolean completed;
+
+  @Schema(description = "Дата и время создания")
   private LocalDateTime createdAt;
+
+  @Schema(description = "Срок выполнения")
   private LocalDate dueDate;
+
+  @Schema(description = "Приоритет")
   private Priority priority;
+
+  @Schema(description = "Теги")
   private Set<String> tags = new LinkedHashSet<>();
 
   public Long getId() {
@@ -79,43 +96,5 @@ public class Task {
 
   public void setTags(Set<String> tags) {
     this.tags = tags == null ? new LinkedHashSet<>() : new LinkedHashSet<>(tags);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    Task task = (Task) o;
-    return completed == task.completed
-        && Objects.equals(id, task.id)
-        && Objects.equals(title, task.title)
-        && Objects.equals(description, task.description)
-        && Objects.equals(createdAt, task.createdAt)
-        && Objects.equals(dueDate, task.dueDate)
-        && priority == task.priority
-        && Objects.equals(tags, task.tags);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id, title, description, completed, createdAt, dueDate, priority, tags);
-  }
-
-  @Override
-  public String toString() {
-    return "Task{"
-        + "id=" + id
-        + ", title='" + title + '\''
-        + ", description='" + description + '\''
-        + ", completed=" + completed
-        + ", createdAt=" + createdAt
-        + ", dueDate=" + dueDate
-        + ", priority=" + priority
-        + ", tags=" + tags
-        + '}';
   }
 }

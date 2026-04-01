@@ -8,11 +8,18 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.mipt.andreysofronov.dto.TaskCreateDto;
+import com.mipt.andreysofronov.dto.TaskResponseDto;
+import com.mipt.andreysofronov.dto.TaskUpdateDto;
+import com.mipt.andreysofronov.model.Priority;
 import com.mipt.andreysofronov.model.Task;
 import com.mipt.andreysofronov.repository.TaskRepository;
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,7 +37,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(
-    properties = {"spring.profiles.active=test", "app.name=test-app", "app.version=0-test"})
+    properties = {
+      "spring.profiles.active=test",
+      "app.name=test-app",
+      "app.version=0-test",
+      "app.api.version=2.0.0"
+    })
 class TaskControllerTest {
 
   @Autowired private TestRestTemplate restTemplate;
@@ -76,7 +88,6 @@ class TaskControllerTest {
         .deleteById(anyLong());
   }
 
-  /** Сначала HTTP-запрос, чтобы при lazy-init отработал {@code @PostConstruct} у {@code TaskService}. */
   private void warmUpTaskService() {
     ResponseEntity<String> r = restTemplate.getForEntity("/api/tasks", String.class);
     assertThat(r.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -85,16 +96,14 @@ class TaskControllerTest {
   @Test
   void getAllTasks_returnsOkWithBody() {
     warmUpTaskService();
-    Task body = new Task();
-    body.setTitle("a");
-    body.setDescription("d");
-    body.setCompleted(false);
-    restTemplate.postForEntity("/api/tasks", jsonEntity(body), Task.class);
+    restTemplate.postForEntity(
+        "/api/tasks", jsonEntity(createDto("abc")), TaskResponseDto.class);
 
-    ResponseEntity<Task[]> response = restTemplate.getForEntity("/api/tasks", Task[].class);
+    ResponseEntity<TaskResponseDto[]> response =
+        restTemplate.getForEntity("/api/tasks", TaskResponseDto[].class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(response.getBody()).extracting(Task::getTitle).contains("a");
+    assertThat(response.getBody()).extracting(TaskResponseDto::getTitle).contains("abc");
   }
 
   @Test
@@ -110,25 +119,25 @@ class TaskControllerTest {
   @Test
   void getTaskById_whenFound_returnsOk() {
     warmUpTaskService();
-    Task created =
+    TaskResponseDto created =
         restTemplate
-            .postForEntity("/api/tasks", jsonEntity(newTask("x")), Task.class)
+            .postForEntity("/api/tasks", jsonEntity(createDto("xxx")), TaskResponseDto.class)
             .getBody();
     assertThat(created).isNotNull();
 
-    ResponseEntity<Task> response =
-        restTemplate.getForEntity("/api/tasks/" + created.getId(), Task.class);
+    ResponseEntity<TaskResponseDto> response =
+        restTemplate.getForEntity("/api/tasks/" + created.getId(), TaskResponseDto.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).isNotNull();
-    assertThat(response.getBody().getTitle()).isEqualTo("x");
+    assertThat(response.getBody().getTitle()).isEqualTo("xxx");
   }
 
   @Test
   void getTaskById_whenMissing_returnsNotFound() {
     warmUpTaskService();
 
-    ResponseEntity<Task> response = restTemplate.getForEntity("/api/tasks/99", Task.class);
+    ResponseEntity<String> response = restTemplate.getForEntity("/api/tasks/99", String.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
   }
@@ -145,10 +154,10 @@ class TaskControllerTest {
   @Test
   void createTask_returnsCreated() {
     warmUpTaskService();
-    Task input = newTask("new");
+    TaskCreateDto input = createDto("new");
 
-    ResponseEntity<Task> response =
-        restTemplate.postForEntity("/api/tasks", jsonEntity(input), Task.class);
+    ResponseEntity<TaskResponseDto> response =
+        restTemplate.postForEntity("/api/tasks", jsonEntity(input), TaskResponseDto.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     assertThat(response.getBody()).isNotNull();
@@ -174,7 +183,7 @@ class TaskControllerTest {
     when(taskRepository.save(any(Task.class))).thenThrow(new RuntimeException("persist failed"));
 
     ResponseEntity<String> response =
-        restTemplate.postForEntity("/api/tasks", jsonEntity(newTask("t")), String.class);
+        restTemplate.postForEntity("/api/tasks", jsonEntity(createDto("bad")), String.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
   }
@@ -182,30 +191,30 @@ class TaskControllerTest {
   @Test
   void updateTask_returnsOk() {
     warmUpTaskService();
-    Task created =
+    TaskResponseDto created =
         restTemplate
-            .postForEntity("/api/tasks", jsonEntity(newTask("old")), Task.class)
+            .postForEntity("/api/tasks", jsonEntity(createDto("old")), TaskResponseDto.class)
             .getBody();
     assertThat(created).isNotNull();
 
-    Task body = new Task();
-    body.setTitle("u");
+    TaskUpdateDto body = new TaskUpdateDto();
+    body.setTitle("upd");
     body.setDescription("d");
     body.setCompleted(true);
 
-    ResponseEntity<Task> response =
+    ResponseEntity<TaskResponseDto> response =
         restTemplate.exchange(
-            "/api/tasks/" + created.getId(), HttpMethod.PUT, jsonEntity(body), Task.class);
+            "/api/tasks/" + created.getId(), HttpMethod.PUT, jsonEntity(body), TaskResponseDto.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).isNotNull();
-    assertThat(response.getBody().getTitle()).isEqualTo("u");
+    assertThat(response.getBody().getTitle()).isEqualTo("upd");
   }
 
   @Test
   void updateTask_whenInvalidIdPath_returnsClientOrServerError() {
-    Task body = new Task();
-    body.setTitle("u");
+    TaskUpdateDto body = new TaskUpdateDto();
+    body.setTitle("valid");
 
     ResponseEntity<String> response =
         restTemplate.exchange("/api/tasks/not-id", HttpMethod.PUT, jsonEntity(body), String.class);
@@ -217,12 +226,19 @@ class TaskControllerTest {
   @Test
   void updateTask_whenSaveFails_returnsInternalServerError() {
     warmUpTaskService();
+    TaskResponseDto existing =
+        restTemplate
+            .postForEntity("/api/tasks", jsonEntity(createDto("tmp")), TaskResponseDto.class)
+            .getBody();
+    assertThat(existing).isNotNull();
+
     when(taskRepository.save(any(Task.class))).thenThrow(new RuntimeException("update failed"));
-    Task body = new Task();
-    body.setTitle("u");
+    TaskUpdateDto body = new TaskUpdateDto();
+    body.setTitle("ups");
 
     ResponseEntity<String> response =
-        restTemplate.exchange("/api/tasks/2", HttpMethod.PUT, jsonEntity(body), String.class);
+        restTemplate.exchange(
+            "/api/tasks/" + existing.getId(), HttpMethod.PUT, jsonEntity(body), String.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
   }
@@ -230,9 +246,9 @@ class TaskControllerTest {
   @Test
   void deleteTask_returnsNoContent() {
     warmUpTaskService();
-    Task created =
+    TaskResponseDto created =
         restTemplate
-            .postForEntity("/api/tasks", jsonEntity(newTask("del")), Task.class)
+            .postForEntity("/api/tasks", jsonEntity(createDto("del")), TaskResponseDto.class)
             .getBody();
     assertThat(created).isNotNull();
 
@@ -260,17 +276,19 @@ class TaskControllerTest {
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
   }
 
-  private static HttpEntity<Task> jsonEntity(Task task) {
+  private static <T> HttpEntity<T> jsonEntity(T body) {
     org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
-    return new HttpEntity<>(task, headers);
+    return new HttpEntity<>(body, headers);
   }
 
-  private static Task newTask(String title) {
-    Task t = new Task();
-    t.setTitle(title);
-    t.setDescription("d");
-    t.setCompleted(false);
-    return t;
+  private static TaskCreateDto createDto(String title) {
+    TaskCreateDto d = new TaskCreateDto();
+    d.setTitle(title);
+    d.setDescription("d");
+    d.setDueDate(LocalDate.now().plusDays(1));
+    d.setPriority(Priority.MEDIUM);
+    d.setTags(new LinkedHashSet<>(Set.of("t")));
+    return d;
   }
 }

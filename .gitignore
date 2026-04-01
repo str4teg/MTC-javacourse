@@ -86,3 +86,6 @@ nb-configuration.xml
 
 
 *.log
+
+uploads/
+target/test-uploads/
