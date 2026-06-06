@@ -1,7 +1,24 @@
-# Профиль разработки: подробные логи приложения и веб-слоя
+# Профиль разработки: локальная БД PostgreSQL (docker-compose), подробные логи
 logging:
   level:
     root: INFO
     com.mipt.andreysofronov: DEBUG
     org.springframework.web: DEBUG
     org.springframework.web.servlet.DispatcherServlet: DEBUG
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:tasks_db}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+
+flyway:
+  enabled: true
+  baseline-on-migrate: true
+  locations: classpath:db/migration

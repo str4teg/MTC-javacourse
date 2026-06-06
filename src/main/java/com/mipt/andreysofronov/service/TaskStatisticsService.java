@@ -15,11 +15,11 @@ import org.springframework.stereotype.Service;
 public class TaskStatisticsService {
 
   private final TaskRepository primaryTaskRepository;
-  private final TaskRepository stubTaskRepository;
+  private final com.mipt.andreysofronov.repository.StubTaskRepository stubTaskRepository;
 
   public TaskStatisticsService(
       TaskRepository primaryTaskRepository,
-      @Qualifier("stubTaskRepository") TaskRepository stubTaskRepository) {
+      @Qualifier("stubTaskRepository") com.mipt.andreysofronov.repository.StubTaskRepository stubTaskRepository) {
     this.primaryTaskRepository = primaryTaskRepository;
     this.stubTaskRepository = stubTaskRepository;
   }

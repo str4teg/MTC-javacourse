@@ -18,6 +18,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Optional;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,6 +108,23 @@ public class TaskService {
 
   public List<Task> findAll() {
     return taskRepository.findAll();
+  }
+
+  /**
+   * Обновляет список задач как выполненные в рамках транзакции.
+   * При отсутствии хотя бы одной задачи бросает TaskNotFoundException и откатывает всё.
+   */
+  @Transactional(propagation = Propagation.REQUIRED, isolation = Isolation.READ_COMMITTED, rollbackFor = RuntimeException.class)
+  public void bulkCompleteTasks(List<Long> ids) {
+    for (Long id : ids) {
+      Task t = taskRepository.findById(id).orElseThrow(() -> new com.mipt.andreysofronov.exception.TaskNotFoundException(id));
+      t.setCompleted(true);
+      taskRepository.save(t);
+    }
+  }
+
+  public List<Task> findAllWithAttachments() {
+    return taskRepository.findAllWithAttachments();
   }
 
   public void deleteById(Long id) {

@@ -10,9 +10,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
-@Primary
 @Repository
-public class InMemoryTaskRepository implements TaskRepository {
+public class InMemoryTaskRepository {
 
   private final Map<Long, Task> tasks = new ConcurrentHashMap<>();
   private final AtomicLong idSequence = new AtomicLong(0);

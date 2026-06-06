@@ -79,7 +79,9 @@ public class AttachmentService {
     }
 
     TaskAttachment attachment = new TaskAttachment();
-    attachment.setTaskId(taskId);
+    // привязываем к сущности Task
+    com.mipt.andreysofronov.model.Task task = taskRepository.findById(taskId).orElseThrow(() -> new TaskNotFoundException(taskId));
+    attachment.setTask(task);
     attachment.setFileName(originalName);
     attachment.setStoredFileName(storedName);
     attachment.setContentType(contentType);
