@@ -1,9 +1,11 @@
 package com.mipt.andreysofronov.mapper;
 
+import com.mipt.andreysofronov.dto.AttachmentResponseDto;
 import com.mipt.andreysofronov.dto.TaskCreateDto;
 import com.mipt.andreysofronov.dto.TaskResponseDto;
 import com.mipt.andreysofronov.dto.TaskUpdateDto;
 import com.mipt.andreysofronov.model.Task;
+import com.mipt.andreysofronov.model.TaskAttachment;
 import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -32,4 +34,6 @@ public interface TaskMapper {
   Task updateEntity(TaskUpdateDto dto, @MappingTarget Task task);
 
   TaskResponseDto toResponseDto(Task task);
+
+  AttachmentResponseDto toResponseDto(TaskAttachment attachment);
 }

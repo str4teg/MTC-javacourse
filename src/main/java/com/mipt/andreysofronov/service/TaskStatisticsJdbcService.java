@@ -1,12 +1,9 @@
 package com.mipt.andreysofronov.service;
 
+import com.mipt.andreysofronov.dto.TaskPriorityCountDto;
 import com.mipt.andreysofronov.model.Priority;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.EnumMap;
-import java.util.Map;
+import java.util.List;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -15,27 +12,20 @@ public class TaskStatisticsJdbcService {
   private final JdbcTemplate jdbcTemplate;
 
   public TaskStatisticsJdbcService(JdbcTemplate jdbcTemplate) {
-    this.jdbcTemplate = jdbcTemplate;
+	this.jdbcTemplate = jdbcTemplate;
   }
 
-  public Map<Priority, Long> getTasksCountByPriority() {
-    String sql = "select priority, count(*) as cnt from tasks group by priority";
-    return jdbcTemplate.query(sql, rs -> {
-      Map<Priority, Long> map = new EnumMap<>(Priority.class);
-      while (rs.next()) {
-        String p = rs.getString("priority");
-        long cnt = rs.getLong("cnt");
-        if (p != null) {
-          try {
-            Priority pr = Priority.valueOf(p);
-            map.put(pr, cnt);
-          } catch (IllegalArgumentException ignored) {
-          }
-        }
-      }
-      return map;
-    });
+  public List<TaskPriorityCountDto> getTasksCountByPriority() {
+	String sql =
+		"select priority, count(*) as task_count from tasks group by priority order by priority";
+	return jdbcTemplate.query(
+		sql,
+		(rs, rowNum) -> {
+		  TaskPriorityCountDto dto = new TaskPriorityCountDto();
+		  dto.setPriority(Priority.valueOf(rs.getString("priority")));
+		  dto.setCount(rs.getLong("task_count"));
+		  return dto;
+		});
   }
-
 }
 

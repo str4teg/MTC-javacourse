@@ -1,6 +1,7 @@
 package com.mipt.andreysofronov.config;
 
 import com.mipt.andreysofronov.repository.TaskRepository;
+import com.mipt.andreysofronov.repository.TaskJpaRepository;
 import com.mipt.andreysofronov.service.TaskService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +42,7 @@ public class TaskLifecycleProcessor implements BeanPostProcessor {
   }
 
   private static boolean matches(Object bean) {
-    return bean instanceof TaskService || bean instanceof TaskRepository;
+    return bean instanceof TaskService || bean instanceof TaskRepository || bean instanceof TaskJpaRepository;
   }
 
   private static String kind(Object bean) {

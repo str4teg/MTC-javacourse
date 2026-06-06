@@ -7,11 +7,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import org.springframework.context.annotation.Primary;
-import org.springframework.stereotype.Repository;
 
-@Repository
-public class InMemoryTaskRepository {
+public class InMemoryTaskRepository implements TaskRepository {
 
   private final Map<Long, Task> tasks = new ConcurrentHashMap<>();
   private final AtomicLong idSequence = new AtomicLong(0);

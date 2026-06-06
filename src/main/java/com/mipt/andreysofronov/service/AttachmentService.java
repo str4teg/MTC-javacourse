@@ -3,6 +3,7 @@ package com.mipt.andreysofronov.service;
 import com.mipt.andreysofronov.dto.AttachmentDownload;
 import com.mipt.andreysofronov.dto.AttachmentResponseDto;
 import com.mipt.andreysofronov.exception.TaskNotFoundException;
+import com.mipt.andreysofronov.model.Task;
 import com.mipt.andreysofronov.model.TaskAttachment;
 import com.mipt.andreysofronov.repository.TaskAttachmentRepository;
 import com.mipt.andreysofronov.repository.TaskRepository;
@@ -24,6 +25,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AttachmentService {
@@ -50,11 +52,12 @@ public class AttachmentService {
     }
   }
 
+  @Transactional
   public AttachmentResponseDto storeAttachment(Long taskId, MultipartFile file) {
     if (file == null || file.isEmpty()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "file is required");
     }
-    taskRepository.findById(taskId).orElseThrow(() -> new TaskNotFoundException(taskId));
+    Task task = taskRepository.findById(taskId).orElseThrow(() -> new TaskNotFoundException(taskId));
 
     String originalName = safeOriginalFileName(file.getOriginalFilename());
     String storedName = buildStoredFileName(originalName);
@@ -79,19 +82,28 @@ public class AttachmentService {
     }
 
     TaskAttachment attachment = new TaskAttachment();
-    // привязываем к сущности Task
-    com.mipt.andreysofronov.model.Task task = taskRepository.findById(taskId).orElseThrow(() -> new TaskNotFoundException(taskId));
     attachment.setTask(task);
+    attachment.setTaskId(task.getId());
     attachment.setFileName(originalName);
     attachment.setStoredFileName(storedName);
     attachment.setContentType(contentType);
     attachment.setSize(size);
     attachment.setUploadedAt(LocalDateTime.now());
 
-    TaskAttachment saved = attachmentRepository.save(attachment);
-    return AttachmentResponseDto.from(saved);
+    try {
+      TaskAttachment saved = attachmentRepository.save(attachment);
+      return AttachmentResponseDto.from(saved);
+    } catch (RuntimeException ex) {
+      try {
+        Files.deleteIfExists(target);
+      } catch (IOException cleanupError) {
+        throw new UncheckedIOException("Failed to cleanup stored file after DB error", cleanupError);
+      }
+      throw ex;
+    }
   }
 
+  @Transactional(readOnly = true)
   public AttachmentDownload prepareDownload(Long attachmentId) {
     TaskAttachment attachment =
         attachmentRepository
@@ -112,6 +124,7 @@ public class AttachmentService {
     return new FileSystemResource(path);
   }
 
+  @Transactional
   public void deleteAttachment(Long attachmentId) {
     TaskAttachment attachment =
         attachmentRepository
@@ -128,6 +141,7 @@ public class AttachmentService {
     attachmentRepository.deleteById(attachmentId);
   }
 
+  @Transactional(readOnly = true)
   public List<AttachmentResponseDto> listAttachmentsForTask(Long taskId) {
     taskRepository.findById(taskId).orElseThrow(() -> new TaskNotFoundException(taskId));
     return attachmentRepository.findByTaskId(taskId).stream()

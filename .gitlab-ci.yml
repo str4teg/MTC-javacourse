@@ -1,0 +1,14 @@
+stages:
+  - test
+
+maven-test:
+  stage: test
+  image: maven:3.9.9-eclipse-temurin-21
+  script:
+    - mvn -B test
+  cache:
+    paths:
+      - .m2/repository
+  variables:
+    MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+

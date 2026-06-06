@@ -1,58 +1,69 @@
 package com.mipt.andreysofronov.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.mipt.andreysofronov.config.JpaAuditingConfig;
-import com.mipt.andreysofronov.exception.TaskNotFoundException;
+import com.mipt.andreysofronov.exception.TaskBulkCompletionException;
 import com.mipt.andreysofronov.model.Priority;
 import com.mipt.andreysofronov.model.Task;
-import com.mipt.andreysofronov.repository.TaskRepository;
+import com.mipt.andreysofronov.repository.JpaTaskRepositoryAdapter;
+import com.mipt.andreysofronov.repository.TaskJpaRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
 import java.util.List;
-import org.junit.jupiter.api.Assertions;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest
-@ActiveProfiles("test")
-@Import(JpaAuditingConfig.class)
-public class TaskServiceIntegrationTest {
+@DataJpaTest
+@Import({JpaAuditingConfig.class, TaskService.class, JpaTaskRepositoryAdapter.class})
+class TaskServiceIntegrationTest {
 
-  @Autowired
-  private TaskService taskService;
-
-  @Autowired
-  private TaskRepository taskRepository;
+  @Autowired private TaskService taskService;
+  @Autowired private TaskJpaRepository taskJpaRepository;
 
   @Test
-  void bulkCompleteTasks_shouldRollbackOnMissingId() {
-    Task t1 = new Task();
-    t1.setTitle("t1");
-    t1.setDescription("d1");
-    t1.setCreatedAt(LocalDateTime.now());
-    t1.setDueDate(LocalDate.now().plusDays(1));
-    t1.setPriority(Priority.LOW);
-    t1 = taskRepository.save(t1);
+  void bulkCompleteTasks_rollsBackWhenSomeIdsMissing() {
+    Task task = taskJpaRepository.save(task("rollback"));
+    Long id = task.getId();
 
-    Task t2 = new Task();
-    t2.setTitle("t2");
-    t2.setDescription("d2");
-    t2.setCreatedAt(LocalDateTime.now());
-    t2.setDueDate(LocalDate.now().plusDays(2));
-    t2.setPriority(Priority.MEDIUM);
-    t2 = taskRepository.save(t2);
+    assertThatThrownBy(() -> taskService.bulkCompleteTasks(List.of(id, 999L)))
+        .isInstanceOf(TaskBulkCompletionException.class)
+        .hasMessageContaining("999");
 
-    Long missingId = 99999L;
-    Assertions.assertThrows(TaskNotFoundException.class, () -> taskService.bulkCompleteTasks(List.of(t1.getId(), missingId, t2.getId())));
+    Task reloaded = taskJpaRepository.findById(id).orElseThrow();
+    assertThat(reloaded.isCompleted()).isFalse();
+  }
 
-    // всё должно остаться в прежнем состоянии (не выполнено)
-    Task fresh1 = taskRepository.findById(t1.getId()).orElseThrow();
-    Task fresh2 = taskRepository.findById(t2.getId()).orElseThrow();
-    Assertions.assertFalse(fresh1.isCompleted());
-    Assertions.assertFalse(fresh2.isCompleted());
+  @Test
+  void bulkCompleteTasks_marksAllExistingTasks() {
+    Task first = taskJpaRepository.save(task("first"));
+    Task second = taskJpaRepository.save(task("second"));
+
+    taskService.bulkCompleteTasks(List.of(first.getId(), second.getId()));
+
+    assertThat(taskJpaRepository.findById(first.getId()).orElseThrow().isCompleted()).isTrue();
+    assertThat(taskJpaRepository.findById(second.getId()).orElseThrow().isCompleted()).isTrue();
+  }
+
+  private static Task task(String title) {
+    Task task = new Task();
+    task.setTitle(title);
+    task.setDescription(title + "-desc");
+    task.setCompleted(false);
+    task.setCreatedAt(LocalDateTime.now());
+    task.setUpdatedAt(LocalDateTime.now());
+    task.setDueDate(LocalDate.now().plusDays(2));
+    task.setPriority(Priority.MEDIUM);
+    task.setTags(new LinkedHashSet<>(Set.of("x")));
+    return task;
   }
 }
+
+
+
 

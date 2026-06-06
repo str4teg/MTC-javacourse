@@ -1,23 +1,16 @@
 package com.mipt.andreysofronov.repository;
 
-import com.mipt.andreysofronov.model.Priority;
 import com.mipt.andreysofronov.model.Task;
-import java.time.LocalDate;
 import java.util.List;
-import org.springframework.data.jpa.repository.EntityGraph;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import java.util.Optional;
 
-public interface TaskRepository extends JpaRepository<Task, Long> {
+public interface TaskRepository {
 
-  List<Task> findByCompletedAndPriority(Boolean completed, Priority priority);
+  Task save(Task task);
 
-  @Query("select t from Task t where t.dueDate between :from and :to")
-  List<Task> findDueBetween(@Param("from") LocalDate from, @Param("to") LocalDate to);
+  Optional<Task> findById(Long id);
 
-  @EntityGraph(attributePaths = {"attachments"})
-  @Query("select t from Task t")
-  List<Task> findAllWithAttachments();
+  List<Task> findAll();
 
+  void deleteById(Long id);
 }

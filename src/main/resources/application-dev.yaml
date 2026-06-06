@@ -1,4 +1,3 @@
-# Профиль разработки: локальная БД PostgreSQL (docker-compose), подробные логи
 logging:
   level:
     root: INFO
@@ -8,17 +7,18 @@ logging:
 
 spring:
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:tasks_db}
-    username: ${DB_USER:postgres}
-    password: ${DB_PASSWORD:postgres}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:todo}
+    username: ${DB_USER:todo}
+    password: ${DB_PASSWORD:todo}
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: validate
     properties:
       hibernate:
-        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
 
-flyway:
-  enabled: true
-  baseline-on-migrate: true
-  locations: classpath:db/migration
