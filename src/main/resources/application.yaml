@@ -12,6 +12,10 @@ app:
 spring:
   profiles:
     active: dev
+  jpa:
+    open-in-view: false
+  flyway:
+    locations: classpath:db/migration
   mvc:
     throw-exception-if-no-handler-found: true
   servlet:
@@ -35,3 +39,4 @@ openapi:
   contact:
     name: "API Support"
     email: "api-support@example.com"
+

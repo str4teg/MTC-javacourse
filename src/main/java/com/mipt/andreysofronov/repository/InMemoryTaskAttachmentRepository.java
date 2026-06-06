@@ -7,11 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import org.springframework.context.annotation.Primary;
-import org.springframework.stereotype.Repository;
 
-@Primary
-@Repository
 public class InMemoryTaskAttachmentRepository implements TaskAttachmentRepository {
 
   private final Map<Long, TaskAttachment> attachments = new ConcurrentHashMap<>();

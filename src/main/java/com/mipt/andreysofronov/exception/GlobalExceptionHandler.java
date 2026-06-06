@@ -80,7 +80,7 @@ public class GlobalExceptionHandler {
             "parameter",
             ex.getParameterName(),
             "type",
-            ex.getParameterType() != null ? ex.getParameterType() : "");
+            ex.getParameterType());
     ErrorResponse body =
         buildError(
             request,
@@ -95,9 +95,8 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponse> handleNotReadable(
       HttpMessageNotReadableException ex, HttpServletRequest request) {
     Map<String, Object> details = new LinkedHashMap<>();
-    Throwable cause = ex.getMostSpecificCause();
-    if (cause != null && cause.getMessage() != null) {
-      details.put("cause", cause.getMessage());
+    if (ex.getMostSpecificCause().getMessage() != null) {
+      details.put("cause", ex.getMostSpecificCause().getMessage());
     }
     ErrorResponse body =
         buildError(
@@ -126,6 +125,20 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponse> handleTaskNotFound(
       TaskNotFoundException ex, HttpServletRequest request) {
     Map<String, Object> details = Map.of("taskId", ex.getTaskId());
+    ErrorResponse body =
+        buildError(
+            request,
+            HttpStatus.NOT_FOUND,
+            "Not Found",
+            ex.getMessage(),
+            details);
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+  }
+
+  @ExceptionHandler(TaskBulkCompletionException.class)
+  public ResponseEntity<ErrorResponse> handleTaskBulkCompletion(
+      TaskBulkCompletionException ex, HttpServletRequest request) {
+    Map<String, Object> details = Map.of("missingTaskIds", ex.getMissingTaskIds());
     ErrorResponse body =
         buildError(
             request,

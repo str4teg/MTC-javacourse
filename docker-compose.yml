@@ -1,0 +1,22 @@
+services:
+  postgres:
+	image: postgres:16-alpine
+	container_name: mtc-todo-postgres
+	restart: unless-stopped
+	environment:
+	  POSTGRES_DB: ${DB_NAME:-todo}
+	  POSTGRES_USER: ${DB_USER:-todo}
+	  POSTGRES_PASSWORD: ${DB_PASSWORD:-todo}
+	ports:
+	  - "5432:5432"
+	healthcheck:
+	  test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-todo} -d ${DB_NAME:-todo}"]
+	  interval: 5s
+	  timeout: 5s
+	  retries: 10
+	volumes:
+	  - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+
