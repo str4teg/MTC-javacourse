@@ -40,3 +40,73 @@ openapi:
     name: "API Support"
     email: "api-support@example.com"
 
+# ===== Resilient Secure HTTP Gateway (hometask_4) =====
+
+# Security: in-memory users + JWT + BCrypt pepper.
+# NB: secret/pepper are demo defaults; in real deployments override them via env vars.
+security:
+  jwt:
+    # HS256 requires a key of at least 32 bytes.
+    secret: ${JWT_SECRET:change-me-super-secret-jwt-signing-key-32B-minimum!!}
+    expiration-ms: ${JWT_EXPIRATION_MS:3600000}
+  password:
+    # Pepper read from properties; concatenated with the raw password before BCrypt.
+    pepper: ${PASSWORD_PEPPER:s3rv3r-s1de-p3pp3r}
+
+# External tasks service that the gateway talks to via RestClient.
+# By default it points at the bundled emulator (ExternalApiController) on this same app.
+external:
+  api:
+    base-url: ${EXTERNAL_API_BASE_URL:http://localhost:8080/external/v1}
+    connect-timeout-ms: ${EXTERNAL_API_CONNECT_TIMEOUT_MS:2000}
+    read-timeout-ms: ${EXTERNAL_API_READ_TIMEOUT_MS:2000}
+    user-agent: resilient-secure-gateway/1.0
+
+# Resilience4j applied on TasksGatewayService (the wrapper over ExternalTasksClient).
+resilience4j:
+  ratelimiter:
+    instances:
+      externalApi:
+        limit-for-period: 20
+        limit-refresh-period: 1s
+        timeout-duration: 0s
+        register-health-indicator: true
+  circuitbreaker:
+    instances:
+      externalApi:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        register-health-indicator: true
+        record-exceptions:
+          - com.mipt.andreysofronov.gateway.exception.ExternalApiException
+        ignore-exceptions:
+          - com.mipt.andreysofronov.gateway.exception.ExternalTaskNotFoundException
+          - io.github.resilience4j.ratelimiter.RequestNotPermitted
+  retry:
+    instances:
+      externalApi:
+        max-attempts: 2
+        wait-duration: 200ms
+        retry-exceptions:
+          - com.mipt.andreysofronov.gateway.exception.ExternalApiException
+        ignore-exceptions:
+          - com.mipt.andreysofronov.gateway.exception.ExternalTaskNotFoundException
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,info,circuitbreakers,ratelimiters
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [trace=%X{traceId:-}] %logger{36} - %msg%n"
+

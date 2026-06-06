@@ -79,7 +79,28 @@
         <mapstruct.version>1.6.3</mapstruct.version>
         <springdoc.version>2.8.5</springdoc.version>
         <jackson.version>2.19.0</jackson.version>
+        <spring.boot.version>3.5.0</spring.boot.version>
+        <resilience4j.version>2.3.0</resilience4j.version>
+        <jjwt.version>0.12.6</jjwt.version>
     </properties>
+
+    <!--
+      Import the Spring Boot BOM so every transitive dependency (jackson-databind, slf4j-api,
+      logback, micrometer, ...) is aligned to the Boot 3.5.0 baseline. Without it, newly added
+      libraries (jjwt-jackson, resilience4j) drag in older jackson/slf4j versions and break the
+      runtime. Explicit <version> declarations below still win over the BOM where present.
+    -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring.boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
         <dependencies>
         <dependency>
@@ -152,6 +173,51 @@
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
             <version>2.3.232</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- ===== Resilient Secure HTTP Gateway (hometask_4) ===== -->
+        <!-- Spring Security: JWT-protected internal API (lecture 9) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+            <version>${spring.boot.version}</version>
+        </dependency>
+        <!-- Actuator: /actuator/health, /actuator/metrics + resilience4j health/metrics -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+            <version>${spring.boot.version}</version>
+        </dependency>
+        <!-- Resilience4j: RateLimiter + CircuitBreaker + Retry on the gateway service (lecture 10) -->
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-spring-boot3</artifactId>
+            <version>${resilience4j.version}</version>
+        </dependency>
+        <!-- JJWT: sign/verify HS256 JWT access tokens -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>${jjwt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <!-- Spring Security test helpers (SecurityMockMvcRequestPostProcessors, etc.) -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <version>6.5.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

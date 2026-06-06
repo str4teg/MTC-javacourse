@@ -25,3 +25,52 @@ openapi:
   contact:
     name: "API Support"
     email: "api-support@example.com"
+
+# Gateway config for the test classpath. This file shadows the main application.yaml on the test
+# classpath, so the security / external / resilience4j settings the gateway needs must be repeated
+# here. DEFINED_PORT tests override the per-instance resilience values and external.api.base-url
+# inline.
+security:
+  jwt:
+    secret: test-only-jwt-signing-secret-key-at-least-32-bytes!!
+    expiration-ms: 3600000
+  password:
+    pepper: test-pepper
+
+external:
+  api:
+    base-url: http://localhost:8080/external/v1
+    connect-timeout-ms: 2000
+    read-timeout-ms: 2000
+    user-agent: resilient-secure-gateway-test/1.0
+
+resilience4j:
+  ratelimiter:
+    instances:
+      externalApi:
+        limit-for-period: 20
+        limit-refresh-period: 1s
+        timeout-duration: 0s
+  circuitbreaker:
+    instances:
+      externalApi:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+        record-exceptions:
+          - com.mipt.andreysofronov.gateway.exception.ExternalApiException
+        ignore-exceptions:
+          - com.mipt.andreysofronov.gateway.exception.ExternalTaskNotFoundException
+          - io.github.resilience4j.ratelimiter.RequestNotPermitted
+  retry:
+    instances:
+      externalApi:
+        max-attempts: 2
+        wait-duration: 50ms
+        retry-exceptions:
+          - com.mipt.andreysofronov.gateway.exception.ExternalApiException
+        ignore-exceptions:
+          - com.mipt.andreysofronov.gateway.exception.ExternalTaskNotFoundException
