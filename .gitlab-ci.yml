@@ -1,14 +1,26 @@
 stages:
   - test
 
+# Прогон всех тестов, включая интеграционные с Testcontainers (реальный PostgreSQL в Docker).
+# Testcontainers требует доступного Docker-демона: поднимаем docker:dind как сервис.
+# Раннер должен быть в привилегированном режиме (privileged = true), иначе dind не стартует.
 maven-test:
   stage: test
   image: maven:3.9.9-eclipse-temurin-21
+  services:
+    - name: docker:27-dind
+      alias: docker
+  variables:
+    # Maven-контейнер общается с демоном dind по TCP (TLS отключён ради простоты в CI).
+    DOCKER_HOST: "tcp://docker:2375"
+    DOCKER_TLS_CERTDIR: ""
+    # Контейнеры Testcontainers доступны по хосту dind-сервиса, а не по localhost.
+    TESTCONTAINERS_HOST_OVERRIDE: "docker"
+    # Ryuk (resource reaper) нестабилен в dind — полагаемся на авто-остановку контейнеров.
+    TESTCONTAINERS_RYUK_DISABLED: "true"
+    MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
   script:
-    - mvn -B test
+    - mvn -B verify
   cache:
     paths:
       - .m2/repository
-  variables:
-    MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
-
