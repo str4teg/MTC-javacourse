@@ -1,294 +1,147 @@
 package com.mipt.andreysofronov.controller;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mipt.andreysofronov.dto.TaskCreateDto;
-import com.mipt.andreysofronov.dto.TaskResponseDto;
-import com.mipt.andreysofronov.dto.TaskUpdateDto;
+import com.mipt.andreysofronov.exception.GlobalExceptionHandler;
+import com.mipt.andreysofronov.mapper.TaskMapperImpl;
 import com.mipt.andreysofronov.model.Priority;
 import com.mipt.andreysofronov.model.Task;
 import com.mipt.andreysofronov.repository.TaskRepository;
+import com.mipt.andreysofronov.service.TaskService;
 import java.time.LocalDate;
-import java.util.ArrayList;
+import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+/**
+ * Часть 2: slice-тестирование web-слоя через {@link WebMvcTest} + {@link MockMvc}.
+ *
+ * <p>Поднимается только web-контекст для {@link TaskController}; {@link TaskService} заменён моком,
+ * а реальный {@link TaskMapperImpl} импортируется, чтобы проверять настоящую сериализацию сущности
+ * в JSON. Покрыты коды статусов 201 (создание) и 200 (получение по id), валидация входных данных и
+ * формат JSON-ответа.
+ */
+@WebMvcTest(controllers = TaskController.class)
+@AutoConfigureMockMvc(addFilters = false)
+@Import({GlobalExceptionHandler.class, TaskMapperImpl.class})
 @TestPropertySource(
     properties = {
       "spring.profiles.active=test",
       "app.name=test-app",
       "app.version=0-test",
-      "app.api.version=2.0.0"
+      "app.api.version=2.0.0",
+      "openapi.title=T",
+      "openapi.description=D",
+      "openapi.contact.name=N",
+      "openapi.contact.email=n@e.com"
     })
 class TaskControllerTest {
 
-  @Autowired private TestRestTemplate restTemplate;
+  @Autowired private MockMvc mockMvc;
+  @Autowired private ObjectMapper objectMapper;
 
-  @MockitoBean(name = "inMemoryTaskRepository")
-  private TaskRepository taskRepository;
+  @MockitoBean private TaskService taskService;
 
-  private final Map<Long, Task> store = new ConcurrentHashMap<>();
-  private final AtomicLong idSeq = new AtomicLong();
+  /** Нужен для бина {@link com.mipt.andreysofronov.validation.DueDateNotBeforeCreationValidator}. */
+  @MockitoBean private TaskRepository taskRepository;
 
-  @BeforeEach
-  void configureRepositoryMock() {
-    reset(taskRepository);
-    store.clear();
-    idSeq.set(0);
-
-    when(taskRepository.save(any(Task.class)))
+  @Test
+  void createTask_returnsCreatedWithJsonBody() throws Exception {
+    // given: валидный запрос на создание; сервис «сохраняет» сущность и проставляет ей id
+    TaskCreateDto dto = createDto("Купить молоко");
+    when(taskService.save(any(Task.class)))
         .thenAnswer(
-            inv -> {
-              Task t = inv.getArgument(0);
-              if (t.getId() == null) {
-                t.setId(idSeq.incrementAndGet());
-              }
-              store.put(t.getId(), t);
-              return t;
+            invocation -> {
+              Task toSave = invocation.getArgument(0);
+              toSave.setId(99L);
+              return toSave;
             });
 
-    when(taskRepository.findAll()).thenAnswer(inv -> new ArrayList<>(store.values()));
-
-    when(taskRepository.findById(anyLong()))
-        .thenAnswer(
-            inv -> {
-              Long id = inv.getArgument(0);
-              return Optional.ofNullable(store.get(id));
-            });
-
-    doAnswer(
-            inv -> {
-              store.remove(inv.getArgument(0));
-              return null;
-            })
-        .when(taskRepository)
-        .deleteById(anyLong());
-  }
-
-  private void warmUpTaskService() {
-    ResponseEntity<String> r = restTemplate.getForEntity("/api/tasks", String.class);
-    assertThat(r.getStatusCode()).isEqualTo(HttpStatus.OK);
+    // when / then: 201 Created + тело ответа в формате JSON отражает сохранённую задачу
+    mockMvc
+        .perform(
+            post("/api/tasks")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(dto)))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.id").value(99))
+        .andExpect(jsonPath("$.title").value("Купить молоко"))
+        .andExpect(jsonPath("$.description").value("Купить молоко-desc"))
+        .andExpect(jsonPath("$.completed").value(false))
+        .andExpect(jsonPath("$.priority").value("MEDIUM"))
+        .andExpect(jsonPath("$.tags[0]").value("tag"));
   }
 
   @Test
-  void getAllTasks_returnsOkWithBody() {
-    warmUpTaskService();
-    restTemplate.postForEntity(
-        "/api/tasks", jsonEntity(createDto("abc")), TaskResponseDto.class);
+  void getTaskById_whenFound_returnsOkWithJsonBody() throws Exception {
+    // given: в сервисе лежит ранее сохранённая задача
+    Task saved = task(7L, "Прочитать книгу", true);
+    when(taskService.findById(7L)).thenReturn(Optional.of(saved));
 
-    ResponseEntity<TaskResponseDto[]> response =
-        restTemplate.getForEntity("/api/tasks", TaskResponseDto[].class);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(response.getBody()).extracting(TaskResponseDto::getTitle).contains("abc");
+    // when / then: 200 OK + JSON-тело совпадает с сохранённой задачей
+    mockMvc
+        .perform(get("/api/tasks/{id}", 7L).accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value(7))
+        .andExpect(jsonPath("$.title").value("Прочитать книгу"))
+        .andExpect(jsonPath("$.completed").value(true))
+        .andExpect(jsonPath("$.priority").value("MEDIUM"));
   }
 
   @Test
-  void getAllTasks_whenFindAllFails_returnsInternalServerError() {
-    warmUpTaskService();
-    when(taskRepository.findAll()).thenThrow(new RuntimeException("storage unavailable"));
+  void createTask_whenTitleTooShort_returnsBadRequestJson() throws Exception {
+    // given: заголовок короче минимума (3 символа) — нарушение валидации
+    TaskCreateDto dto = createDto("ab");
 
-    ResponseEntity<String> response = restTemplate.getForEntity("/api/tasks", String.class);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+    // when / then: 400 Bad Request с телом ошибки в формате JSON
+    mockMvc
+        .perform(
+            post("/api/tasks")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(dto)))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.status").value(400))
+        .andExpect(jsonPath("$.error").value("Bad Request"));
   }
 
-  @Test
-  void getTaskById_whenFound_returnsOk() {
-    warmUpTaskService();
-    TaskResponseDto created =
-        restTemplate
-            .postForEntity("/api/tasks", jsonEntity(createDto("xxx")), TaskResponseDto.class)
-            .getBody();
-    assertThat(created).isNotNull();
-
-    ResponseEntity<TaskResponseDto> response =
-        restTemplate.getForEntity("/api/tasks/" + created.getId(), TaskResponseDto.class);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(response.getBody()).isNotNull();
-    assertThat(response.getBody().getTitle()).isEqualTo("xxx");
-  }
-
-  @Test
-  void getTaskById_whenMissing_returnsNotFound() {
-    warmUpTaskService();
-
-    ResponseEntity<String> response = restTemplate.getForEntity("/api/tasks/99", String.class);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-  }
-
-  @Test
-  void getTaskById_whenInvalidPath_returnsClientOrServerError() {
-    ResponseEntity<String> response =
-        restTemplate.getForEntity("/api/tasks/not-a-number", String.class);
-
-    assertThat(response.getStatusCode().is4xxClientError() || response.getStatusCode().is5xxServerError())
-        .isTrue();
-  }
-
-  @Test
-  void createTask_returnsCreated() {
-    warmUpTaskService();
-    TaskCreateDto input = createDto("new");
-
-    ResponseEntity<TaskResponseDto> response =
-        restTemplate.postForEntity("/api/tasks", jsonEntity(input), TaskResponseDto.class);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-    assertThat(response.getBody()).isNotNull();
-    assertThat(response.getBody().getId()).isNotNull();
-    assertThat(response.getBody().getTitle()).isEqualTo("new");
-  }
-
-  @Test
-  void createTask_whenBodyInvalid_returnsClientOrServerError() {
-    org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
-    headers.setContentType(MediaType.APPLICATION_JSON);
-    HttpEntity<String> badJson = new HttpEntity<>("{invalid", headers);
-
-    ResponseEntity<String> response = restTemplate.postForEntity("/api/tasks", badJson, String.class);
-
-    assertThat(response.getStatusCode().is4xxClientError() || response.getStatusCode().is5xxServerError())
-        .isTrue();
-  }
-
-  @Test
-  void createTask_whenSaveFails_returnsInternalServerError() {
-    warmUpTaskService();
-    when(taskRepository.save(any(Task.class))).thenThrow(new RuntimeException("persist failed"));
-
-    ResponseEntity<String> response =
-        restTemplate.postForEntity("/api/tasks", jsonEntity(createDto("bad")), String.class);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-  }
-
-  @Test
-  void updateTask_returnsOk() {
-    warmUpTaskService();
-    TaskResponseDto created =
-        restTemplate
-            .postForEntity("/api/tasks", jsonEntity(createDto("old")), TaskResponseDto.class)
-            .getBody();
-    assertThat(created).isNotNull();
-
-    TaskUpdateDto body = new TaskUpdateDto();
-    body.setTitle("upd");
-    body.setDescription("d");
-    body.setCompleted(true);
-
-    ResponseEntity<TaskResponseDto> response =
-        restTemplate.exchange(
-            "/api/tasks/" + created.getId(), HttpMethod.PUT, jsonEntity(body), TaskResponseDto.class);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(response.getBody()).isNotNull();
-    assertThat(response.getBody().getTitle()).isEqualTo("upd");
-  }
-
-  @Test
-  void updateTask_whenInvalidIdPath_returnsClientOrServerError() {
-    TaskUpdateDto body = new TaskUpdateDto();
-    body.setTitle("valid");
-
-    ResponseEntity<String> response =
-        restTemplate.exchange("/api/tasks/not-id", HttpMethod.PUT, jsonEntity(body), String.class);
-
-    assertThat(response.getStatusCode().is4xxClientError() || response.getStatusCode().is5xxServerError())
-        .isTrue();
-  }
-
-  @Test
-  void updateTask_whenSaveFails_returnsInternalServerError() {
-    warmUpTaskService();
-    TaskResponseDto existing =
-        restTemplate
-            .postForEntity("/api/tasks", jsonEntity(createDto("tmp")), TaskResponseDto.class)
-            .getBody();
-    assertThat(existing).isNotNull();
-
-    when(taskRepository.save(any(Task.class))).thenThrow(new RuntimeException("update failed"));
-    TaskUpdateDto body = new TaskUpdateDto();
-    body.setTitle("ups");
-
-    ResponseEntity<String> response =
-        restTemplate.exchange(
-            "/api/tasks/" + existing.getId(), HttpMethod.PUT, jsonEntity(body), String.class);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-  }
-
-  @Test
-  void deleteTask_returnsNoContent() {
-    warmUpTaskService();
-    TaskResponseDto created =
-        restTemplate
-            .postForEntity("/api/tasks", jsonEntity(createDto("del")), TaskResponseDto.class)
-            .getBody();
-    assertThat(created).isNotNull();
-
-    ResponseEntity<Void> response =
-        restTemplate.exchange(
-            "/api/tasks/" + created.getId(), HttpMethod.DELETE, null, Void.class);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    verify(taskRepository).deleteById(created.getId());
-  }
-
-  @Test
-  void deleteTask_whenDeleteFails_returnsInternalServerError() {
-    warmUpTaskService();
-    doAnswer(
-            inv -> {
-              throw new RuntimeException("delete failed");
-            })
-        .when(taskRepository)
-        .deleteById(anyLong());
-
-    ResponseEntity<String> response =
-        restTemplate.exchange("/api/tasks/1", HttpMethod.DELETE, null, String.class);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-  }
-
-  private static <T> HttpEntity<T> jsonEntity(T body) {
-    org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
-    headers.setContentType(MediaType.APPLICATION_JSON);
-    return new HttpEntity<>(body, headers);
+  private static Task task(Long id, String title, boolean completed) {
+    Task task = new Task();
+    task.setId(id);
+    task.setTitle(title);
+    task.setDescription(title + "-desc");
+    task.setCompleted(completed);
+    task.setCreatedAt(LocalDateTime.now());
+    task.setUpdatedAt(LocalDateTime.now());
+    task.setDueDate(LocalDate.now().plusDays(1));
+    task.setPriority(Priority.MEDIUM);
+    task.setTags(new LinkedHashSet<>(Set.of("tag")));
+    return task;
   }
 
   private static TaskCreateDto createDto(String title) {
-    TaskCreateDto d = new TaskCreateDto();
-    d.setTitle(title);
-    d.setDescription("d");
-    d.setDueDate(LocalDate.now().plusDays(1));
-    d.setPriority(Priority.MEDIUM);
-    d.setTags(new LinkedHashSet<>(Set.of("t")));
-    return d;
+    TaskCreateDto dto = new TaskCreateDto();
+    dto.setTitle(title);
+    dto.setDescription(title + "-desc");
+    dto.setDueDate(LocalDate.now().plusDays(1));
+    dto.setPriority(Priority.MEDIUM);
+    dto.setTags(new LinkedHashSet<>(Set.of("tag")));
+    return dto;
   }
 }
